@@ -17,3 +17,4 @@ npx elm-esm make  --optimize src/Sandbox.elm --output=output/sandbox_elm-esm.js
 List of prior art (also referenced in the text above):
 
 - https://github.com/ChristophP/elm-esm exposes the npm module `elm-esm`
+- Elm discourse post by lydell on minification https://discourse.elm-lang.org/t/what-i-ve-learned-about-minifying-elm-code/7632
