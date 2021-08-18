@@ -229,6 +229,45 @@ const variants = {
       format: "iife",
     });
   },
+  "Just esbuild (transform) with ESM": (code) => {
+    const newCode = `${code.slice(
+      code.indexOf("function F("),
+      code.lastIndexOf("}")
+    )}\nexport const Elm = scope['Elm'];`;
+
+    return esbuild.transformSync(newCode, {
+      // bundle: true,
+      minify: true,
+      pure: pureFuncs,
+      target: "es2020",
+      format: "esm",
+    });
+  },
+  "Just esbuild (build) with ESM": (code) => {
+    const newCode = code.slice(
+      code.indexOf("function F("),
+      code.lastIndexOf(");}")
+    ).replace('_Platform_export({', 'export const Elm = {')
+
+    const filename = `elm_${Date.now()}.mjs`;
+    fs.writeFileSync(filename, newCode, { encoding: 'utf8' });
+    esbuild.buildSync({
+      entryPoints: [filename],
+      outfile: filename,
+      // Without 'bundle', unused top level function will not be removed.
+      // but 'bundle' is only allowed for `build` that operates on the file system.
+      // See https://github.com/evanw/esbuild/issues/1551
+      bundle: true,
+      allowOverwrite: true,
+      minify: true,
+      pure: pureFuncs,
+      target: "es2020",
+      format: "esm",
+    });
+    const buffer = fs.readFileSync(filename);
+    fs.rm(filename, err => { if (err) throw err });
+    return { code: buffer };
+  },
   "UglifyJS tradeoff": (code) =>
     UglifyJS.minify(code, {
       compress: {
