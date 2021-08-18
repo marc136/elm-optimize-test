@@ -23,6 +23,19 @@ NOTE: To get dead code elimination with an ESModule, you currently need to use `
 
 ---
 
+## Tools
+
+- [uglify-js](https://github.com/mishoo/UglifyJS)
+- [esbuild](https://esbuild.github.io)
+
+### Further tools to add
+
+- [google-closure-compiler](https://github.com/google/closure-compiler-npm/tree/master/packages/google-closure-compiler)
+- [terser](https://github.com/terser/terser)
+- [swc](https://github.com/swc-project/swc)
+
+---
+
 List of prior art (also referenced in the text above):
 
 - https://github.com/ChristophP/elm-esm exposes the npm module `elm-esm`
