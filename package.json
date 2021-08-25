@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "esbuild": "0.12.22",
+    "terser": "5.7.2",
     "uglify-js": "3.14.1"
   }
 }
