@@ -12,6 +12,8 @@ Then for comparison, I also used [`elm-esm`](https://github.com/ChristophP/elm-e
 npx elm-esm make  --optimize src/Sandbox.elm --output=output/sandbox_elm-esm.js
 ```
 
+[Comparison of esbuild, terser and uglify-js (by esbuild dev)](https://github.com/evanw/esbuild/issues/639#issuecomment-792057348)
+
 Note by [lydell on a thread about minification with esbuild](https://github.com/evanw/esbuild/issues/639#issuecomment-894467981) which contains several interesting comments about esbuild.
 
 
