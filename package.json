@@ -1,8 +1,22 @@
 {
+  "scripts": {
+    "format": "prettier --write *.js"
+  },
   "dependencies": {
     "esbuild": "0.12.22",
     "google-closure-compiler": "20210808.0.0",
     "terser": "5.7.2",
     "uglify-js": "3.14.1"
+  },
+  "devDependencies": {
+    "prettier": "2.3.2"
+  },
+  "prettier": {
+    "bracketSpacing": true,
+    "printWidth": 100,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "tabWidth": 2
   }
 }
