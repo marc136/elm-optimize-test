@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "esbuild": "0.12.22",
+    "fast-glob": "^3.2.7",
     "google-closure-compiler": "20210808.0.0",
     "terser": "5.7.2",
     "uglify-js": "3.14.1"
