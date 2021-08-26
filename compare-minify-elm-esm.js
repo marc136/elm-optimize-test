@@ -37,31 +37,49 @@ function findElmJsonFolder(dir) {
 }
 
 function elmMake(elmInputFiles) {
+  // Step 1: Compile Elm to IIFE
   const cwd = findElmJsonFolder(path.dirname(elmInputFiles[0]));
-  const output = path.resolve(path.join(results, 'iife.js'));
+  let output = path.resolve(path.join(results, 'iife.js'));
   const elmArgs = ['make', '--optimize'].concat(elmInputFiles, ['--output', output]);
   console.log(`Running \`elm ${elmArgs.join(' ')}\` in ${cwd}`);
   // TODO make elm compiler configurable
-  const start = Date.now();
+  let start = Date.now();
   childProcess.spawnSync('elm', elmArgs, { cwd, stdio: 'inherit' });
-  const end = Date.now();
-  return {
+  let end = Date.now();
+  const iife = {
     filepath: output,
     content: fs.readFileSync(output),
     size: fs.statSync(output).size,
     duration: (end - start) / 1000,
   };
+
+  // Step 2: Transform IIFE to ESM
+  output = path.resolve(path.join(results, 'esm.mjs'));
+  start = Date.now();
+  const iifeString = fs.readFileSync(iife.filepath, 'utf8');
+  let code = iifeString
+    .slice(iifeString.indexOf('function F('), iifeString.lastIndexOf(');}'))
+    .replace('_Platform_export({', 'export const Elm = {');
+  fs.writeFileSync(output, code, 'utf8');
+  end = Date.now();
+
+  const esm = {
+    filepath: output,
+    content: Buffer.from(code, 'utf8'),
+    size: fs.statSync(output).size,
+    duration: iife.duration + (end - start) / 1000,
+  };
+
+  return { iife, esm };
 }
 
-// Create the Elm IIFE
-const elm = {
-  iife: elmMake(elmInputFiles),
-};
+const elm = elmMake(elmInputFiles);
 
 // Minify Elm IIFE
 const iife = require('./minify/iife');
 
 // Minify Elm ESM
+const esm = require('./minify/esm');
 
 // Minify Elm IIFE, then convert it to ESM
 // uglify-js does not work well on the Elm ESM, so this should give us better compression
@@ -94,9 +112,15 @@ function printFileInfoForTable(filepath, title = '', duration = undefined) {
 }
 
 printFileInfoForTable(elm.iife.filepath, 'elm make --optimize (for reference)', elm.iife.duration);
+printFileInfoForTable(
+  elm.esm.filepath,
+  'elm make --optimize and convert to ESM (for reference)',
+  elm.esm.duration
+);
 
 const formats = {
   iife,
+  esm,
 };
 
 // TODO remove
