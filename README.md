@@ -15,6 +15,9 @@ npx elm-esm make  --optimize src/Sandbox.elm --output=output/sandbox_elm-esm.js
 Note by [lydell on a thread about minification with esbuild](https://github.com/evanw/esbuild/issues/639#issuecomment-894467981) which contains several interesting comments about esbuild.
 
 
+NOTE: To get dead code elimination with an ESModule, you currently need to use `format:"esm"` and `bundle:true` with esbuild@0.12.22. I created the issue https://github.com/evanw/esbuild/issues/1551 for this behavior and maybe it will be fixed.
+
+
 
 ---
 
