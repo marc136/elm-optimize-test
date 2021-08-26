@@ -11,8 +11,8 @@ const { pureFuncs } = require('./common');
  */
 const variants = {
   uglify: {
-    'UglifyJS tradeoff (uglify cannot compress an ESM well)': ({ esm }) =>
-      UglifyJS.minify(esm.content.toString(), {
+    'UglifyJS tradeoff (uglify cannot compress an ESM well)': ({ elm }) =>
+      UglifyJS.minify(elm.esm.content.toString(), {
         compress: {
           ...Object.fromEntries(
             Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
@@ -32,9 +32,9 @@ const variants = {
       }).code,
   },
   esbuild: {
-    minify: ({ esm }, outfile) => {
+    minify: ({ elm }, outfile) => {
       esbuild.buildSync({
-        entryPoints: [esm.filepath],
+        entryPoints: [elm.esm.filepath],
         outfile,
         minify: true,
         bundle: true, // needed to enable DCE (see See https://github.com/evanw/esbuild/issues/1551)
@@ -43,10 +43,10 @@ const variants = {
         format: 'esm',
       });
     },
-    'minify (transform API - strange: does not remove unused code)': ({ esm }) =>
+    'minify (transform API - strange: does not remove unused code)': ({ elm }) =>
       // No dead code eliminiation because it would break the Svelte compiler.
       // See https://github.com/evanw/esbuild/issues/1551#issuecomment-906008421
-      esbuild.transformSync(esm.content.toString(), {
+      esbuild.transformSync(elm.esm.content.toString(), {
         minify: true,
         pure: pureFuncs,
         target: 'es2020',

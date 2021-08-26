@@ -14,18 +14,18 @@ const { pureFuncs } = require('./common');
  */
 const variants = {
   uglify: {
-    'Remove whitespace and comments': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'Remove whitespace and comments': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: false,
         mangle: false,
       }).code,
-    'Remove whitespace and comments, and mangle variable names': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'Remove whitespace and comments, and mangle variable names': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: false,
         mangle: true,
       }).code,
-    'Elm Guide command (run UglifyJS twice: `compress` then `mangle`)': ({ iife }) => {
-      const compressed = UglifyJS.minify(iife.content.toString(), {
+    'Elm Guide command (run UglifyJS twice: `compress` then `mangle`)': ({ elm }) => {
+      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           pure_funcs: pureFuncs,
           pure_getters: true,
@@ -39,8 +39,8 @@ const variants = {
         mangle: true,
       }).code;
     },
-    'Tweaked Elm Guide command (run UglifyJS just once with `mangle.reserved`)': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'Tweaked Elm Guide command (run UglifyJS just once with `mangle.reserved`)': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           pure_funcs: pureFuncs,
           pure_getters: true,
@@ -51,8 +51,8 @@ const variants = {
           reserved: pureFuncs,
         },
       }).code,
-    'Tweaked Elm Guide command (`passes: 2`)': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'Tweaked Elm Guide command (`passes: 2`)': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           pure_funcs: pureFuncs,
           pure_getters: true,
@@ -64,8 +64,8 @@ const variants = {
           reserved: pureFuncs,
         },
       }).code,
-    'Tweaked Elm Guide command (`passes: 3`)': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'Tweaked Elm Guide command (`passes: 3`)': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           pure_funcs: pureFuncs,
           pure_getters: true,
@@ -77,8 +77,8 @@ const variants = {
           reserved: pureFuncs,
         },
       }).code,
-    'UglifyJS tradeoff': ({ iife }) =>
-      UglifyJS.minify(iife.content.toString(), {
+    'UglifyJS tradeoff': ({ elm }) =>
+      UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           ...Object.fromEntries(
             Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
@@ -98,8 +98,8 @@ const variants = {
       }).code,
   },
   'uglify+esbuild': {
-    'Elm Guide compress with uglify-js, then minify with esbuild': ({ iife }) => {
-      const compressed = UglifyJS.minify(iife.content.toString(), {
+    'Elm Guide compress with uglify-js, then minify with esbuild': ({ elm }) => {
+      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           pure_funcs: pureFuncs,
           pure_getters: true,
@@ -114,8 +114,8 @@ const variants = {
         target: 'es2020',
       }).code;
     },
-    'Compress partially with uglify-js, then minify with esbuild': ({ iife }) => {
-      const compressed = UglifyJS.minify(iife.content.toString(), {
+    'Compress partially with uglify-js, then minify with esbuild': ({ elm }) => {
+      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           ...Object.fromEntries(
             Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
@@ -147,9 +147,9 @@ const variants = {
       }).code;
     },
     'Compress partially with uglify-js (and `reduce_vars:false`), then minify with esbuild': ({
-      iife,
+      elm,
     }) => {
-      const compressed = UglifyJS.minify(iife.content.toString(), {
+      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
         compress: {
           ...Object.fromEntries(
             Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
@@ -181,9 +181,9 @@ const variants = {
     },
   },
   esbuild: {
-    minify: ({ iife }, outfile) => {
+    minify: ({ elm }, outfile) => {
       esbuild.buildSync({
-        entryPoints: [iife.filepath],
+        entryPoints: [elm.iife.filepath],
         outfile,
         minify: true,
         pure: pureFuncs,
@@ -191,15 +191,15 @@ const variants = {
         format: 'iife',
       });
     },
-    'minify (transform API)': ({ iife }) =>
-      esbuild.transformSync(iife.content.toString(), {
+    'minify (transform API)': ({ elm }) =>
+      esbuild.transformSync(elm.iife.content.toString(), {
         minify: true,
         pure: pureFuncs,
         target: 'es5',
         format: 'iife',
       }).code,
-    'minify (with IIFE trick)': ({ iife }) => {
-      const code = iife.content.toString();
+    'minify (with IIFE trick)': ({ elm }) => {
+      const code = elm.iife.content.toString();
       const newCode = `var scope = window;${code.slice(
         code.indexOf('{') + 1,
         code.lastIndexOf('}')
