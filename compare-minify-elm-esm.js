@@ -28,8 +28,6 @@ try {
   }
 }
 
-const pureFuncs = 'F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9'.split(',');
-
 function findElmJsonFolder(dir) {
   return fs.existsSync(path.join(dir, 'elm.json'))
     ? dir
@@ -61,207 +59,7 @@ const elm = {
 };
 
 // Minify Elm IIFE
-// Copied from https://gist.github.com/lydell/b92ec8b6c7ae91945da10c814e565d5e (revision 5)
-// TODO use the uglifyjs cli to directly operate on files?
-const iife = {
-  uglify: {
-    'Remove whitespace and comments': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: false,
-        mangle: false,
-      }).code,
-    'Remove whitespace and comments, and mangle variable names': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: false,
-        mangle: true,
-      }).code,
-    'Elm Guide command (run UglifyJS twice: `compress` then `mangle`)': () => {
-      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          unsafe_comps: true,
-          unsafe: true,
-        },
-        mangle: false,
-      }).code;
-      return UglifyJS.minify(compressed, {
-        compress: false,
-        mangle: true,
-      }).code;
-    },
-    'Tweaked Elm Guide command (run UglifyJS just once with `mangle.reserved`)': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          unsafe_comps: true,
-          unsafe: true,
-        },
-        mangle: {
-          reserved: pureFuncs,
-        },
-      }).code,
-    'Tweaked Elm Guide command (`passes: 2`)': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          unsafe_comps: true,
-          unsafe: true,
-          passes: 2,
-        },
-        mangle: {
-          reserved: pureFuncs,
-        },
-      }).code,
-    'Tweaked Elm Guide command (`passes: 3`)': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          unsafe_comps: true,
-          unsafe: true,
-          passes: 3,
-        },
-        mangle: {
-          reserved: pureFuncs,
-        },
-      }).code,
-    'UglifyJS tradeoff': () =>
-      UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          ...Object.fromEntries(
-            Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
-              key,
-              value === true ? false : value,
-            ])
-          ),
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          join_vars: true,
-          conditionals: true,
-          unused: true,
-        },
-        mangle: {
-          reserved: pureFuncs,
-        },
-      }).code,
-  },
-  'uglify+esbuild': {
-    'Elm Guide compress with uglify-js, then minify with esbuild': () => {
-      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          unsafe_comps: true,
-          unsafe: true,
-        },
-        mangle: false,
-      }).code;
-      if (!compressed) throw 'uglify-js failed';
-      return esbuild.transformSync(compressed, {
-        minify: true,
-        target: 'es2020',
-      }).code;
-    },
-    'Compress partially with uglify-js, then minify with esbuild': () => {
-      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          ...Object.fromEntries(
-            Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
-              key,
-              value === true ? false : value,
-            ])
-          ),
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          strings: true,
-          sequences: true,
-          merge_vars: true,
-          switches: true,
-          dead_code: true,
-          if_return: true,
-          inline: true,
-          join_vars: true,
-          reduce_vars: true,
-          conditionals: true,
-          collapse_vars: true,
-          unused: true,
-        },
-        mangle: false,
-      }).code;
-      if (!compressed) throw 'uglify-js failed';
-      return esbuild.transformSync(compressed, {
-        minify: true,
-        target: 'es2020',
-      }).code;
-    },
-    'Compress partially with uglify-js (and `reduce_vars:false`), then minify with esbuild': () => {
-      const compressed = UglifyJS.minify(elm.iife.content.toString(), {
-        compress: {
-          ...Object.fromEntries(
-            Object.entries(UglifyJS.default_options().compress).map(([key, value]) => [
-              key,
-              value === true ? false : value,
-            ])
-          ),
-          pure_funcs: pureFuncs,
-          pure_getters: true,
-          strings: true,
-          sequences: true,
-          merge_vars: true,
-          switches: true,
-          dead_code: true,
-          if_return: true,
-          inline: true,
-          join_vars: true,
-          conditionals: true,
-          collapse_vars: true,
-          unused: true,
-        },
-        mangle: false,
-      }).code;
-      if (!compressed) throw 'uglify-js failed';
-      return esbuild.transformSync(compressed, {
-        minify: true,
-        target: 'es2020',
-      }).code;
-    },
-  },
-  esbuild: {
-    minify: (outfile) => {
-      esbuild.buildSync({
-        entryPoints: [elm.iife.filepath],
-        outfile,
-        minify: true,
-        pure: pureFuncs,
-        target: 'es5',
-        format: 'iife',
-      });
-    },
-    'minify (transform API)': () =>
-      esbuild.transformSync(elm.iife.content.toString(), {
-        minify: true,
-        pure: pureFuncs,
-        target: 'es5',
-        format: 'iife',
-      }).code,
-    'minifiy (with IIFE trick)': (outfile) => {
-      const code = elm.iife.content.toString();
-      const newCode = `var scope = window;${code.slice(
-        code.indexOf('{') + 1,
-        code.lastIndexOf('}')
-      )}`;
-      return esbuild.transformSync(newCode, {
-        minify: true,
-        pure: pureFuncs,
-        target: 'es5',
-        format: 'iife',
-      }).code;
-    },
-  },
-};
+const iife = require('./minify/iife');
 
 // Minify Elm ESM
 
@@ -311,7 +109,7 @@ for (const [formatName, batch] of Object.entries(formats)) {
       const variantName = `${formatName} ${groupName} ${title}`;
       const outputfile = path.join(results, `${formatName}_${groupName}_${index}.js`);
       const start = Date.now();
-      const result = minify(outputfile);
+      const result = minify(elm, outputfile);
       const end = Date.now();
       const duration = `${((end - start) / 1000).toFixed(1)}s`;
 

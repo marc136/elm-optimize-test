@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "format": "prettier --write *.js"
+    "format": "prettier --write *.js && prettier --write minify/*.js"
   },
   "dependencies": {
     "esbuild": "0.12.22",
