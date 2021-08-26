@@ -124,6 +124,8 @@ const formats = {
 };
 
 // TODO remove
+delete formats.iife;
+delete formats.esm.uglify;
 // delete iife['uglify'];
 // delete iife['uglify+esbuild'];
 
