@@ -53,6 +53,9 @@ const variants = {
         format: 'esm',
       }).code,
   },
+  closure: {
+    // only generates IIFE
+  },
 };
 
 module.exports = variants;

@@ -141,24 +141,25 @@ for (const variant of Object.values(elm)) {
 }
 
 // TODO remove
-delete formats.iife;
+// delete formats.iife;
 delete formats.esm.uglify;
-// delete iife['uglify'];
-// delete iife['uglify+esbuild'];
+delete formats.iife.uglify;
+delete formats.iife['uglify+esbuild'];
 
 for (const [formatName, batch] of Object.entries(formats)) {
   for (const [groupName, group] of Object.entries(batch)) {
-    Object.entries(group).forEach(([title, minify], index) => {
+    Object.entries(group).forEach(async ([title, minify], index) => {
       const variantName = `${formatName} ${groupName} ${title}`;
       const filename = `${formatName}_${groupName}_${index}.js`;
       const outputfile = path.join(results, filename);
       const start = Date.now();
-      const result = minify({ elm, progress }, outputfile);
+      const result = await minify({ elm, progress }, outputfile);
       const end = Date.now();
 
-      if (typeof result === 'string') {
+      if (typeof result === 'string' && result.length > 10) {
         fs.writeFileSync(outputfile, result, 'utf8');
       }
+
       const buffer = fs.readFileSync(outputfile);
       const stat = {
         title: variantName,

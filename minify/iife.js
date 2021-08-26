@@ -4,7 +4,8 @@ const zlib = require('zlib');
 const childProcess = require('child_process');
 const UglifyJS = require('uglify-js');
 const esbuild = require('esbuild');
-const { pureFuncs } = require('./common');
+
+const { pureFuncs, compileWithGoogleClosureCompiler } = require('./common');
 
 /**
  * Minify Elm IIFE
@@ -211,6 +212,23 @@ const variants = {
         format: 'iife',
       }).code;
     },
+  },
+  closure: {
+    default: ({ elm }, outfile) =>
+      compileWithGoogleClosureCompiler({
+        js: elm.iife.filepath,
+        jsOutputFile: outfile,
+        // Changing from 'STABLE' to 'ECMASCRIPT5' only increased the time, but created identical
+        // files. I assume because it only verifies if the generated file matches the spec and does
+        // not transform the code.
+        languageOut: 'STABLE', // default
+      }),
+    advanced: ({ elm }, outfile) =>
+      compileWithGoogleClosureCompiler({
+        js: elm.iife.filepath,
+        jsOutputFile: outfile,
+        compilation_level: 'ADVANCED',
+      }),
   },
 };
 
