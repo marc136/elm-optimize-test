@@ -1,12 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
 
 /**
  * Replace `(function(r){"use strict";` with `const r={};`, then replace `})(this);` with `export const Elm = r.Elm;`.
-
- * @param {string} filepath 
  */
-function iifeToEsm(filepath) {
+function iifeToEsm(filepath: string) {
   if (!filepath.endsWith('.js')) throw 'filepath must end with ".js"';
   const iife = fs.readFileSync(filepath, 'utf8');
 
@@ -27,4 +24,4 @@ function iifeToEsm(filepath) {
   return outputpath;
 }
 
-module.exports = { iifeToEsm };
+export { iifeToEsm };

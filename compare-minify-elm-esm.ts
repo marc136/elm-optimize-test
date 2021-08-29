@@ -1,12 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const zlib = require('zlib');
-const childProcess = require('child_process');
-const UglifyJS = require('uglify-js');
-const esbuild = require('esbuild');
-const find = require('fast-glob');
+import fs from 'fs';
+import path from 'path';
+import zlib from 'zlib';
+import childProcess from 'child_process';
+import find from 'fast-glob';
 
-const iifeThenEsm = require('./minify/iifeThenEsm');
+import { ElmVariants, VariantInfo, VariantInfoWithContent, ToolVariants } from './minify/common';
+import { iifeToEsm } from './minify/iifeThenEsm';
+import iifeTools from './minify/iife';
+import esmTools from './minify/esm';
 
 const args = process.argv.slice(2);
 const elmInputFiles = args.flatMap((arg) => find.sync(arg)).map((file) => path.resolve(file));
@@ -30,7 +31,7 @@ try {
   }
 }
 
-function findElmJsonFolder(dir) {
+function findElmJsonFolder(dir: string): string | undefined {
   return fs.existsSync(path.join(dir, 'elm.json'))
     ? dir
     : dir === path.parse(dir).root
@@ -38,7 +39,7 @@ function findElmJsonFolder(dir) {
     : findElmJsonFolder(path.dirname(dir));
 }
 
-function elmMake(elmInputFiles) {
+function elmMake(elmInputFiles: string[]): ElmVariants {
   // Step 1: Compile Elm to IIFE
   const elmJsonDir = findElmJsonFolder(path.dirname(elmInputFiles[0]));
   let output = path.resolve(path.join(results, 'iife.js'));
@@ -77,30 +78,17 @@ function elmMake(elmInputFiles) {
 const KiB = 1024;
 const MiB = 1024 * KiB;
 
-function printSize(byteLength) {
+function printSize(byteLength: number): string {
   return byteLength >= MiB
     ? `${(byteLength / MiB).toFixed(2)}MiB`
     : `${(byteLength / KiB).toFixed(0)}KiB`;
 }
 
-/**
- * The result of minifying the code with one variant
- * @typedef {Object} VariantInfo
- * @property {string} filepath
- * @property {string} filename
- * @property {string} title
- * @property {number|undefined} duration
- * @property {number} size
- * @property {number} gzipSize
- */
-
-/**
- *
- * @param {string} title
- * @param {string} filepath
- * @returns VariantInfo
- */
-function analyzeFile(title, filepath, duration = 0) {
+function analyzeFile(
+  title: string,
+  filepath: string,
+  duration: number = 0
+): VariantInfoWithContent {
   const buffer = fs.readFileSync(filepath);
   return {
     title,
@@ -118,48 +106,25 @@ function analyzeFile(title, filepath, duration = 0) {
  * @param {VariantInfo} param0
  * @returns string
  */
-function variantInfoToString({ filename, title, duration, size, gzipSize }) {
+function variantInfoToString({ filename, title, duration, size, gzipSize }: VariantInfo) {
   const s = isNaN(duration) || duration <= 0 ? '-' : `${duration.toFixed(1)}s`;
   return `|${filename}|${title}|${s}|${printSize(size)}|${printSize(gzipSize)}|`;
 }
 
-//
-//
-// START OF PROGRAM
-//
-//
+type Progress = Map<string, VariantInfo>;
 
-const elm = elmMake(elmInputFiles);
+async function minifyWithAllVariants(formats: Formats): Promise<Progress> {
+  const progress: Progress = new Map();
 
-const formats = {
-  iife: require('./minify/iife'),
-  esm: require('./minify/esm'),
-};
-
-/** @type Map<string,VariantInfelm o> */
-const progress = new Map();
-
-// print lines for the uncompressed elm compiler output
-for (const variant of Object.values(elm)) {
-  console.log(variantInfoToString(variant));
-}
-
-// TODO remove
-// delete formats.iife;
-delete formats.esm.uglify;
-// delete formats.iife.uglify;
-delete formats.iife['uglify+esbuild'];
-delete formats.iife.closure;
-
-async function minifyWithAllVariants(formats) {
-  for (const [formatName, batch] of Object.entries(formats)) {
-    for (const [groupName, group] of Object.entries(batch)) {
-      await Object.entries(group).forEach(async ([title, minify], index) => {
-        const variantName = `${formatName} ${groupName} ${title}`;
-        const filename = `${formatName}_${groupName}_${index}.js`;
+  for (const [formatName, tools] of Object.entries(formats)) {
+    for (const [toolName, variants] of Object.entries(tools)) {
+      for (const variant of variants) {
+        const variantName = `${formatName} ${toolName} ${variant.description}`;
+        const ext = formatName === 'esm' ? 'mjs' : 'js';
+        const filename = `${formatName}_${toolName}_${variant.key}.${ext}`;
         const outputfile = path.join(results, filename);
         const start = Date.now();
-        const result = await minify({ elm, progress }, outputfile);
+        const result = await variant.transform(elm, outputfile, progress);
         const end = Date.now();
 
         if (typeof result === 'string' && result.length > 10) {
@@ -167,27 +132,19 @@ async function minifyWithAllVariants(formats) {
         }
 
         const stat = analyzeFile(variantName, outputfile, (end - start) / 1000);
-        // const buffer = fs.readFileSync(outputfile);
-        // const stat = {
-        //   title: variantName,
-        //   filepath: outputfile,
-        //   filename,
-        //   duration: (end - start) / 1000,
-        //   size: buffer.byteLength,
-        //   gzipSize: zlib.gzipSync(buffer).byteLength,
-        // };
         console.log(variantInfoToString(stat));
         progress.set(filename, stat);
-      });
+      }
     }
   }
   return progress;
 }
 
-function convertIifeToEsm(progress) {
+function convertIifeToEsm(progress: Progress) {
   const converted = [];
-  // convert IIFEs to ESM
-  for (const [filename, stat] of progress.entries()) {
+  const m = new Map();
+
+  for (const [filename, stat] of progress) {
     if (
       !filename.startsWith('iife') ||
       // esbuild can directly create ESM with the same size as the IIFE, so we don't need to convert those
@@ -198,7 +155,7 @@ function convertIifeToEsm(progress) {
 
     try {
       const start = Date.now();
-      const filepath = iifeThenEsm.iifeToEsm(stat.filepath);
+      const filepath = iifeToEsm(stat.filepath);
       const end = Date.now();
 
       const result = analyzeFile(
@@ -217,8 +174,8 @@ function convertIifeToEsm(progress) {
   return progress;
 }
 
-function persistResults(progress) {
-  function dropContent(a) {
+function persistResults(progress: Progress) {
+  function dropContent(a: { content: any }) {
     delete a.content;
     return a;
   }
@@ -227,5 +184,36 @@ function persistResults(progress) {
 
   fs.copyFileSync('template.html', path.join(results, 'results.html'));
 }
+
+//
+//
+// START OF PROGRAM
+//
+//
+
+const elm = elmMake(elmInputFiles);
+
+interface Formats {
+  iife: ToolVariants;
+  esm: ToolVariants;
+  [key: string]: ToolVariants;
+}
+const formats: Formats = {
+  iife: iifeTools,
+  esm: esmTools,
+};
+
+// print lines for the uncompressed elm compiler output
+for (const variant of Object.values(elm)) {
+  console.log(variantInfoToString(variant));
+}
+
+// TODO remove
+// delete formats.iife;
+// delete formats.esm.uglify;
+// delete formats.iife.uglify;
+// delete formats.iife['uglify+esbuild'];
+// delete formats.iife.closure;
+// delete formats.esm;
 
 minifyWithAllVariants(formats).then(convertIifeToEsm).then(persistResults);

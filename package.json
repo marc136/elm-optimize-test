@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "format": "prettier --write *.js && prettier --write minify/*.js"
+    "format": "prettier --write *.[jt]s && prettier --write minify/*.[jt]s",
+    "lint": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
     "esbuild": "0.12.22",
@@ -10,7 +11,10 @@
     "uglify-js": "3.14.1"
   },
   "devDependencies": {
-    "prettier": "2.3.2"
+    "@types/google-closure-compiler": "^0.0.19",
+    "@types/uglify-js": "^3.13.1",
+    "prettier": "2.3.2",
+    "ts-eager": "^2.0.2"
   },
   "prettier": {
     "bracketSpacing": true,
