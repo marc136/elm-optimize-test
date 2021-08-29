@@ -6,6 +6,8 @@ const UglifyJS = require('uglify-js');
 const esbuild = require('esbuild');
 const find = require('fast-glob');
 
+const iifeThenEsm = require('./minify/iifeThenEsm');
+
 const args = process.argv.slice(2);
 const elmInputFiles = args.flatMap((arg) => find.sync(arg)).map((file) => path.resolve(file));
 
@@ -66,6 +68,9 @@ function elmMake(elmInputFiles) {
   );
   esm.duration = iife.duration + (end - start) / 1000;
 
+  // TODO Step 3: Minor change to facilitate IIFE compression and then conversion to ESM
+  // bypass scope wth code.replace('_Platform_export({', 'window.Elm = {`)
+
   return { iife, esm };
 }
 
@@ -95,7 +100,7 @@ function printSize(byteLength) {
  * @param {string} filepath
  * @returns VariantInfo
  */
-function analyzeFile(title, filepath) {
+function analyzeFile(title, filepath, duration = 0) {
   const buffer = fs.readFileSync(filepath);
   return {
     title,
@@ -104,7 +109,7 @@ function analyzeFile(title, filepath) {
     content: buffer,
     size: buffer.byteLength,
     gzipSize: zlib.gzipSync(buffer).byteLength,
-    duration: 0,
+    duration,
   };
 }
 
@@ -129,7 +134,6 @@ const elm = elmMake(elmInputFiles);
 const formats = {
   iife: require('./minify/iife'),
   esm: require('./minify/esm'),
-  // TODO Minify Elm IIFE, then convert it to ESM
 };
 
 /** @type Map<string,VariantInfelm o> */
@@ -143,41 +147,85 @@ for (const variant of Object.values(elm)) {
 // TODO remove
 // delete formats.iife;
 delete formats.esm.uglify;
-delete formats.iife.uglify;
+// delete formats.iife.uglify;
 delete formats.iife['uglify+esbuild'];
+delete formats.iife.closure;
 
-for (const [formatName, batch] of Object.entries(formats)) {
-  for (const [groupName, group] of Object.entries(batch)) {
-    Object.entries(group).forEach(async ([title, minify], index) => {
-      const variantName = `${formatName} ${groupName} ${title}`;
-      const filename = `${formatName}_${groupName}_${index}.js`;
-      const outputfile = path.join(results, filename);
+async function minifyWithAllVariants(formats) {
+  for (const [formatName, batch] of Object.entries(formats)) {
+    for (const [groupName, group] of Object.entries(batch)) {
+      await Object.entries(group).forEach(async ([title, minify], index) => {
+        const variantName = `${formatName} ${groupName} ${title}`;
+        const filename = `${formatName}_${groupName}_${index}.js`;
+        const outputfile = path.join(results, filename);
+        const start = Date.now();
+        const result = await minify({ elm, progress }, outputfile);
+        const end = Date.now();
+
+        if (typeof result === 'string' && result.length > 10) {
+          fs.writeFileSync(outputfile, result, 'utf8');
+        }
+
+        const stat = analyzeFile(variantName, outputfile, (end - start) / 1000);
+        // const buffer = fs.readFileSync(outputfile);
+        // const stat = {
+        //   title: variantName,
+        //   filepath: outputfile,
+        //   filename,
+        //   duration: (end - start) / 1000,
+        //   size: buffer.byteLength,
+        //   gzipSize: zlib.gzipSync(buffer).byteLength,
+        // };
+        console.log(variantInfoToString(stat));
+        progress.set(filename, stat);
+      });
+    }
+  }
+  return progress;
+}
+
+function convertIifeToEsm(progress) {
+  const converted = [];
+  // convert IIFEs to ESM
+  for (const [filename, stat] of progress.entries()) {
+    if (
+      !filename.startsWith('iife') ||
+      // esbuild can directly create ESM with the same size as the IIFE, so we don't need to convert those
+      filename.startsWith('iife_esbuild')
+    ) {
+      continue;
+    }
+
+    try {
       const start = Date.now();
-      const result = await minify({ elm, progress }, outputfile);
+      const filepath = iifeThenEsm.iifeToEsm(stat.filepath);
       const end = Date.now();
 
-      if (typeof result === 'string' && result.length > 10) {
-        fs.writeFileSync(outputfile, result, 'utf8');
-      }
-
-      const buffer = fs.readFileSync(outputfile);
-      const stat = {
-        title: variantName,
-        filepath: outputfile,
-        filename,
-        duration: (end - start) / 1000,
-        size: buffer.byteLength,
-        gzipSize: zlib.gzipSync(buffer).byteLength,
-      };
-      console.log(variantInfoToString(stat));
-      progress.set(filename, stat);
-    });
+      const result = analyzeFile(
+        stat.title.replace('iife', 'iifeThenEsm'),
+        filepath,
+        stat.duration + (end - start) / 1000
+      );
+      console.log(variantInfoToString(result));
+      converted.push(result);
+    } catch (err) {
+      console.error(`Could not convert ${filename} to an ESM.`);
+      console.error(err);
+    }
   }
+  converted.forEach((stat) => progress.set(stat.filename, stat));
+  return progress;
 }
 
-function dropContent(a) {
-  delete a.content;
-  return a;
+function persistResults(progress) {
+  function dropContent(a) {
+    delete a.content;
+    return a;
+  }
+  const arr = Array.from(Object.values(elm)).concat(Array.from(progress.values())).map(dropContent);
+  fs.writeFileSync(path.join(results, 'results.json'), JSON.stringify(arr, undefined, 2));
+
+  fs.copyFileSync('template.html', path.join(results, 'results.html'));
 }
-const arr = Array.from(Object.values(elm)).concat(Array.from(progress.values())).map(dropContent);
-fs.writeFileSync(path.join(results, 'results.json'), JSON.stringify(arr, undefined, 2));
+
+minifyWithAllVariants(formats).then(convertIifeToEsm).then(persistResults);

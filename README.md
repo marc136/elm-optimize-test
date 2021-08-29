@@ -20,6 +20,29 @@ Note by [lydell on a thread about minification with esbuild](https://github.com/
 NOTE: To get dead code elimination with an ESModule, you currently need to use `format:"esm"` and `bundle:true` with esbuild@0.12.22. I created the issue https://github.com/evanw/esbuild/issues/1551 for this behavior and maybe it will be fixed.
 
 
+## Idea to minify IIFE and then change it to ESM
+Initial idea: Prepend `export const Elm = `, take after first `{` and drop `})(this);` at the end, and then append `;`. But that will not work.
+
+Anaylized generated code:
+
+iife_closure_*: `(function(tg){`...`]})(this);\n`
+
+iife_esbuild_*: `(function(){`...`})();\n`
+Problem: The different compilation settings add window.Elm in different ways, and none pass `this` to the IIFE.
+But for esbuild it does not make sense, as the compiling with `format:esm` achieves the same size. So I can ignore this.
+
+iife_uglify_1 `(function(n){`...`})(this);\n`
+iife_uglify_[2-4] `!(function(n){`...`}(this);\n`
+iife_uglify_6 `(function(r){`...`})(this);\n`
+
+iife_uglify+esbuild_0.js `(function(No){`...`})(this);\n`
+iife_uglify+esbuild_1.js `(function(Go){`...`})(this);\n`
+iife_uglify+esbuild_2.js `(function(la){`...`})(this);\n`
+
+What works is: Prepend `const scope = {};`, then slice until last occurence of `(` and append `(scope);export const Elm=scope.Elm;\n`.
+
+Another idea for `iife_uglify_6`:
+Replace `(function(r){"use strict"` with `const r={}`, then replace `})(this);` with `export const Elm = r.Elm;`.
 
 ---
 
