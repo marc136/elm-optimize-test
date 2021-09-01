@@ -10,6 +10,13 @@ import iifeTools from './minify/iife';
 import esmTools from './minify/esm';
 
 const args = process.argv.slice(2);
+
+// TODO read which tools to skip from args
+const skip: { formats: string[]; tools: string[] } = {
+  formats: [],
+  tools: ['closure', 'uglify', 'uglify+esbuild'],
+};
+
 const elmInputFiles = args.flatMap((arg) => find.sync(arg)).map((file) => path.resolve(file));
 
 if (elmInputFiles.length === 0) {
@@ -116,8 +123,17 @@ type Progress = Map<string, VariantInfo>;
 async function minifyWithAllVariants(formats: Formats): Promise<Progress> {
   const progress: Progress = new Map();
 
+  if (skip.formats.length > 0) {
+    console.log('Will skip format', skip.formats.join(', '));
+  }
+  if (skip.tools.length > 0) {
+    console.log('Will skip tool(s)', skip.tools.join(', '));
+  }
+
   for (const [formatName, tools] of Object.entries(formats)) {
+    if (skip.formats.includes(formatName)) continue;
     for (const [toolName, variants] of Object.entries(tools)) {
+      if (skip.tools.includes(toolName)) continue;
       for (const variant of variants) {
         const variantName = `${formatName} ${toolName} ${variant.description}`;
         const ext = formatName === 'esm' ? 'mjs' : 'js';
