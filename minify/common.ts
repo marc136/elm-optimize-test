@@ -35,7 +35,7 @@ export function variant(
 export interface ToolVariants {
   closure: Variant[];
   esbuild: Variant[];
-  // TODO add swc
+  swc: Variant[];
   terser: Variant[];
   uglify: Variant[];
   'uglify+esbuild': Variant[];

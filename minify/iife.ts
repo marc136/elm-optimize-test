@@ -5,6 +5,7 @@
 
 import UglifyJS from 'uglify-js';
 import esbuild from 'esbuild';
+import swc, { TerserCompressOptions } from '@swc/core';
 import terser from 'terser';
 
 import { pureFuncs, Variant, ToolVariants, variant } from './common';
@@ -254,6 +255,125 @@ const closureVariants: Variant[] = [
   ),
 ];
 
+const workingSwcCompressOptions: TerserCompressOptions = {
+  arguments: false,
+  arrows: true,
+  booleans: true,
+  booleans_as_integers: false,
+  collapse_vars: true,
+  comparisons: true,
+  computed_props: true,
+  conditionals: true,
+  dead_code: true,
+  defaults: true,
+  directives: true,
+  drop_console: false,
+  drop_debugger: true,
+  ecma: 5,
+  evaluate: true,
+  expression: false,
+  global_defs: {},
+  hoist_funs: false,
+  hoist_props: true,
+  hoist_vars: false,
+  if_return: false, // default value `true` breaks output with @swc/core@1.2.84
+  inline: 3,
+  join_vars: true,
+  keep_classnames: false,
+  keep_fargs: true,
+  keep_fnames: false,
+  keep_infinity: false,
+  loops: true,
+  negate_iife: true,
+  passes: 1,
+  properties: true,
+  pure_getters: true, // TODO, look into this
+  pure_funcs: pureFuncs,
+  reduce_vars: false, // default value `true` breaks output with @swc/core@1.2.84
+  sequences: false, // default value `true` breaks output with @swc/core@1.2.84
+  side_effects: true,
+  switches: true,
+  top_retain: null,
+  toplevel: false, // TODO, look into this
+  typeofs: false,
+  // unsafe_passes: false, // throws an error in @swc/core@1.2.84
+  unsafe_arrows: false,
+  unsafe_comps: false,
+  // unsafe_function: false, // throws an error in @swc/core@1.2.84
+  unsafe_math: false,
+  unsafe_symbols: false,
+  unsafe_methods: false,
+  unsafe_proto: false,
+  unsafe_regexp: false,
+  unsafe_undefined: false,
+  unused: true,
+  module: false,
+};
+
+// TODO it should be faster to call the cli instead (as it can write to a file)
+const swcVariants: Variant[] = [
+  variant(
+    'transform',
+    'Remove whitespace and comments (transform)',
+    async ({ iife }) =>
+      (
+        await swc.transformFileSync(iife.filepath, {
+          isModule: false,
+          jsc: {
+            target: 'es5',
+          },
+          minify: true,
+        })
+      ).code
+  ),
+  variant(
+    'minify',
+    'Remove whitespace and comments (minify)',
+    async ({ iife }) =>
+      swc.minifySync(iife.content.toString(), {
+        compress: false,
+        mangle: false,
+        sourceMap: false,
+      }).code
+  ),
+  variant(
+    'compress',
+    'working compress settings',
+    async ({ iife }) =>
+      swc.minifySync(iife.content.toString(), {
+        compress: workingSwcCompressOptions,
+        mangle: {
+          // reserved: pureFuncs, // not supported in @swc/core@1.2.84
+        },
+        sourceMap: false,
+      }).code
+  ),
+  variant(
+    'compress-x2',
+    'working compress settings (`passes:2`)',
+    async ({ iife }) =>
+      swc.minifySync(iife.content.toString(), {
+        compress: {...workingSwcCompressOptions, passes: 2},
+        mangle: {
+          // reserved: pureFuncs, // not supported in @swc/core@1.2.84
+        },
+        sourceMap: false,
+      }).code
+  ),
+  variant(
+    'compress-x3',
+    'working compress settings (`passes:3`)',
+    async ({ iife }) =>
+      swc.minifySync(iife.content.toString(), {
+        compress: {...workingSwcCompressOptions, passes: 3},
+        mangle: {
+          // reserved: pureFuncs, // not supported in @swc/core@1.2.84
+        },
+        sourceMap: false,
+      }).code
+  ),
+];
+
 const terserVariants: Variant[] = [
   variant(
     'safe',
@@ -339,6 +459,7 @@ const terserVariants: Variant[] = [
 const variants: ToolVariants = {
   esbuild: esbuildVariants,
   closure: closureVariants,
+  swc: swcVariants,
   terser: terserVariants,
   uglify: uglifyVariants,
   'uglify+esbuild': uglifyAndEsbuildVariants,
