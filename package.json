@@ -4,6 +4,7 @@
     "lint": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
+    "@swc/core": "1.2.84",
     "esbuild": "0.12.22",
     "fast-glob": "^3.2.7",
     "google-closure-compiler": "20210808.0.0",
