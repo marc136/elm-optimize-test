@@ -105,7 +105,8 @@ iife_uglify+esbuild_2.js `(function(la){`...`})(this);\n`
 What works is: Prepend `const scope = {};`, then slice until last occurence of `(` and append `(scope);export const Elm=scope.Elm;\n`.
 
 *Implemented idea:*
-Replace `(function(r){"use strict";` at the beginning with `const r={};`, then replace `})(this);` at the end with `export const Elm = r.Elm;`.
+Replace `(function(r){"use strict";` at the beginning with `const r={};`, then replace `})(this);` at the end with `export const Elm = r.Elm;`.  
+This means that we replace 35 chars with 36, so the size will be pretty much the same.
 
 
 ---
