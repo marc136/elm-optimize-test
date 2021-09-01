@@ -36,7 +36,7 @@ export interface ToolVariants {
   closure: Variant[];
   esbuild: Variant[];
   // TODO add swc
-  // TODO add terser
+  terser: Variant[];
   uglify: Variant[];
   'uglify+esbuild': Variant[];
 }

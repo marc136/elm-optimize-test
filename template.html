@@ -9,9 +9,18 @@
 </head>
 
 <body>
+    <!--
     <script type="module">
         import { Elm } from "./esm_esbuild_minify.mjs";
         console.log('Imported Elm:', Elm);
+    </script>
+    -->
+    <script src="./iife_terser_tradeoff.js"></script>
+    <script>
+        console.log('Imported Elm:', Elm);
+        // Elm.Sandbox.init({ node: document.body });
+        // Elm.Element.init({node: document.body })
+        Elm.ElementWithPorts.init({ node: document.body });
     </script>
 </body>
 

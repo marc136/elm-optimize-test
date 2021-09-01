@@ -43,7 +43,7 @@ If you need special behavior to initialize an Elm app like flags, you should alt
 - [esbuild](https://esbuild.github.io)
 - [google-closure-compiler](https://github.com/google/closure-compiler-npm/tree/master/packages/google-closure-compiler)
 - [swc](https://github.com/swc-project/swc) **TODO**
-- [terser](https://github.com/terser/terser) **TODO**
+- [terser](https://github.com/terser/terser)
 - [uglify-js](https://github.com/mishoo/UglifyJS)
 
 
@@ -72,6 +72,15 @@ Note by [lydell on a thread about minification with esbuild](https://github.com/
 
 NOTE: To get dead code elimination with an ESModule, you currently need to use `format:"esm"` and `bundle:true` with esbuild@0.12.22.  
 I created the issue https://github.com/evanw/esbuild/issues/1551 and it seems like that strange behavior will not go away as it is necessary [for the svelte compiler (it appends code that uses otherwise unused code)](https://github.com/evanw/esbuild/issues/1551#issuecomment-906008421).
+
+
+## terser
+
+TODO try ecma: 2015 (or 2020?) for shorter code https://github.com/terser/terser#format-options
+
+
+compress option:
+`module` (default false) -- Pass true when compressing an ES6 module. Strict mode is implied and the toplevel option as well.
 
 
 ## Idea to minify IIFE and then change it to ESM

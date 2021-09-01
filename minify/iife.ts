@@ -5,6 +5,7 @@
 
 import UglifyJS from 'uglify-js';
 import esbuild from 'esbuild';
+import terser from 'terser';
 
 import { pureFuncs, Variant, ToolVariants, variant } from './common';
 import {
@@ -86,7 +87,7 @@ const uglifyVariants: Variant[] = [
       }).code
   ),
   variant(
-    'elm-guide_tweaked-x2',
+    'elm-guide_tweaked-x3',
     'Tweaked Elm Guide command (`passes: 3`)',
     async ({ iife }) =>
       UglifyJS.minify(iife.content.toString(), {
@@ -253,9 +254,92 @@ const closureVariants: Variant[] = [
   ),
 ];
 
+const terserVariants: Variant[] = [
+  variant(
+    'safe',
+    'Remove whitespace and comments',
+    async ({ iife }) =>
+      (
+        await terser.minify(iife.content.toString(), {
+          compress: false,
+          mangle: false,
+        })
+      ).code
+  ),
+  variant(
+    'elm-guide-tweaked',
+    'Tweaked Elm Guide command (run UglifyJS just once with `mangle.reserved`)',
+    async ({ iife }) =>
+      (
+        await terser.minify(iife.content.toString(), {
+          compress: {
+            pure_funcs: pureFuncs,
+            pure_getters: true,
+            unsafe_comps: true,
+            unsafe: true,
+          },
+          mangle: {
+            reserved: pureFuncs,
+          },
+        })
+      ).code
+  ),
+  variant(
+    'elm-guide_tweaked-x2',
+    'Tweaked Elm Guide command (`passes: 2`)',
+    async ({ iife }) =>
+      (
+        await terser.minify(iife.content.toString(), {
+          compress: {
+            pure_funcs: pureFuncs,
+            pure_getters: true,
+            unsafe_comps: true,
+            unsafe: true,
+            passes: 2,
+          },
+          mangle: {
+            reserved: pureFuncs,
+          },
+        })
+      ).code
+  ),
+  variant(
+    'elm-guide_tweaked-x3',
+    'Tweaked Elm Guide command (`passes: 3`)',
+    async ({ iife }) =>
+      (
+        await terser.minify(iife.content.toString(), {
+          compress: {
+            pure_funcs: pureFuncs,
+            pure_getters: true,
+            unsafe_comps: true,
+            unsafe: true,
+            passes: 3,
+          },
+          mangle: {
+            reserved: pureFuncs,
+          },
+        })
+      ).code
+  ),
+  variant(
+    'tradeoff',
+    'Lydell tradeoff', // TODO change for terser
+    async ({ iife }) =>
+      (await terser.minify(iife.content.toString(), {
+        // @ts-ignore TODO adapt for terser
+        compress: uglifyLydellCompressOptions, 
+        mangle: {
+          reserved: pureFuncs,
+        },
+      })).code
+  ),
+];
+
 const variants: ToolVariants = {
   esbuild: esbuildVariants,
   closure: closureVariants,
+  terser: terserVariants,
   uglify: uglifyVariants,
   'uglify+esbuild': uglifyAndEsbuildVariants,
 };
