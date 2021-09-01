@@ -255,6 +255,10 @@ const closureVariants: Variant[] = [
   ),
 ];
 
+/**
+ * Tested with with @swc/core@1.2.84
+ * Uses default terser values except where it breaks compilation in swc.
+ */
 const workingSwcCompressOptions: TerserCompressOptions = {
   arguments: false,
   arrows: true,
@@ -353,7 +357,7 @@ const swcVariants: Variant[] = [
     'working compress settings (`passes:2`)',
     async ({ iife }) =>
       swc.minifySync(iife.content.toString(), {
-        compress: {...workingSwcCompressOptions, passes: 2},
+        compress: { ...workingSwcCompressOptions, passes: 2 },
         mangle: {
           // reserved: pureFuncs, // not supported in @swc/core@1.2.84
         },
@@ -365,7 +369,7 @@ const swcVariants: Variant[] = [
     'working compress settings (`passes:3`)',
     async ({ iife }) =>
       swc.minifySync(iife.content.toString(), {
-        compress: {...workingSwcCompressOptions, passes: 3},
+        compress: { ...workingSwcCompressOptions, passes: 3 },
         mangle: {
           // reserved: pureFuncs, // not supported in @swc/core@1.2.84
         },
@@ -446,13 +450,15 @@ const terserVariants: Variant[] = [
     'tradeoff',
     'Lydell tradeoff', // TODO change for terser
     async ({ iife }) =>
-      (await terser.minify(iife.content.toString(), {
-        // @ts-ignore TODO adapt for terser
-        compress: uglifyLydellCompressOptions, 
-        mangle: {
-          reserved: pureFuncs,
-        },
-      })).code
+      (
+        await terser.minify(iife.content.toString(), {
+          // @ts-ignore TODO adapt for terser
+          compress: uglifyLydellCompressOptions,
+          mangle: {
+            reserved: pureFuncs,
+          },
+        })
+      ).code
   ),
 ];
 
