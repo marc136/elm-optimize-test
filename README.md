@@ -42,7 +42,7 @@ If you need special behavior to initialize an Elm app like flags, you should alt
 
 - [esbuild](https://esbuild.github.io)
 - [google-closure-compiler](https://github.com/google/closure-compiler-npm/tree/master/packages/google-closure-compiler)
-- [swc](https://github.com/swc-project/swc) **TODO**
+- [swc](https://github.com/swc-project/swc)
 - [terser](https://github.com/terser/terser)
 - [uglify-js](https://github.com/mishoo/UglifyJS)
 
