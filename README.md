@@ -20,11 +20,15 @@ Elm.Main.init(...)
 ```
 
 ## Summary
-So far I have no better advice than what [Simon Lydell](https://twitter.com/SimonLydell) posted on the [Elm discourse](https://discourse.elm-lang.org/t/what-i-ve-learned-about-minifying-elm-code/7632#timesize-comparison-table-13_)
+I have reached pretty much the same conclusion as [Simon Lydell](https://twitter.com/SimonLydell) already published on the [Elm discourse](https://discourse.elm-lang.org/t/what-i-ve-learned-about-minifying-elm-code/7632#timesize-comparison-table-13_)
 
-- UglifyJS produces the smallest file
-- But you can get even smaller by first running just parts of UglifyJS and then esbuild
-- Esbuild alone produces ~2% more code than UglifyJS, but it is ~40 times faster.
+- For the smallest file size using a single tool, you can either pick UglifyJS or Google's closure compiler. Both take about the same time (9.5-10s in my case).
+- But you can achieve the same size result by running just parts of UglifyJS and then esbuild in ~40% of the time (~3.5s).
+- Esbuild alone produces ~10% more code than UglifyJS, but it needs only ~2% of the time (~0.1s) when directly writing to a file.
+- SWC is comparable to Esbuild in compilation time, but not yet in compression ratio (16% bigger). They are working on reaching parity to terser.
+- Terser produces ~4% more code than UglifyJS but only needs 60% of the time.
+
+If you are interested in my values, look at [results.md](results.md).
 
 ## This repo
 
