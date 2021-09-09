@@ -14,7 +14,8 @@ const args = process.argv.slice(2);
 // TODO read which tools to skip from args
 const skip: { formats: string[]; tools: string[] } = {
   formats: [],
-  tools: ['closure', 'uglify', 'uglify+esbuild'],
+  // tools: ['closure', 'uglify', 'uglify+esbuild'],
+  tools: [],
 };
 
 const elmInputFiles = args.flatMap((arg) => find.sync(arg)).map((file) => path.resolve(file));
